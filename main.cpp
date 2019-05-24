@@ -12,6 +12,8 @@
 #include <GLFW/glfw3.h>
 #include <Open3D/Open3D.h>
 
+#include <time.h>
+
 
 //Helper class for controlling the filter's GUI element
 struct filter_slider_ui{
@@ -119,7 +121,7 @@ int main(int argc, char* argv[]) try {
 
 			//threshold filter - Set thresold of distance
 			thr_filter.set_option(RS2_OPTION_MIN_DISTANCE, 0.1f);
-			thr_filter.set_option(RS2_OPTION_MAX_DISTANCE, 2.2f);
+			thr_filter.set_option(RS2_OPTION_MAX_DISTANCE, 8.0f);
 
 			//temporal filter - Filters depth data by looking previous frames
 			temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, 0.06f);
@@ -281,11 +283,18 @@ void update_data(rs2::frame_queue& data, rs2::frame& colorized_depth, rs2::point
 						current_color = get_texcolor(c, tex_coordinates[d]);	//Get color of this point from color frame and texture coordinates [u, v]
 						OPC.colors_.emplace_back(Eigen::Vector3d((double)std::get<0>(current_color) / 255.0, (double)std::get<1>(current_color) / 255.0, (double)std::get<2>(current_color) / 255.0 ));	//Add the point's color
 							//Note: The RGB data of open3D::Pointcloud.colors_ is normarized from 0 to 1. (double)
-							//		So 8-bit color data is  needed to cast to double and devided by 255.0 normarize.
+							//		So 8-bit color data is  needed to cast to double and devided by 255.0 to normarize.
+						//open3d::geometry::CreatePointCloudFromDepthImage();
 					}
 				}
 
-				if (open3d::io::WritePointCloudToPCD("realsense.pcd", OPC, true, false)) {
+				auto now = std::time(nullptr);
+				struct tm* tmNow = std::localtime(&now);
+				
+				std::string filename = "PCD_" + std::to_string( (1900 + tmNow->tm_year) ) + std::to_string(tmNow->tm_mon) + std::to_string(tmNow->tm_mday) + "_" 
+										+ std::to_string(tmNow->tm_hour) + ":" + std::to_string(tmNow->tm_min) + ":" + std::to_string(tmNow->tm_sec) + ".pcd";
+
+				if (open3d::io::WritePointCloudToPCD(filename, OPC, true, false)) {
 					std::cout << "Save Suceeded" << std::endl;
 
 				}
